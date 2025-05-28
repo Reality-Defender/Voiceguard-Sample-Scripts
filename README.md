@@ -7,7 +7,7 @@ Set up the environment using: `conda env create -f voiceguard-processor.yaml`
 ## Usage
 
 ```bash
-python voiceguard_processor.py /path/to/audio/directory \
+python __main__.py /path/to/audio/directory \
     --extensions .wav .mp3 .m4a \
     --api-key YOUR_API_KEY \
     --backend-url https://your-backend-url/query \
@@ -61,12 +61,12 @@ Contains detailed analysis data including:
 
 ### Process WAV files with CSV output
 ```bash
-python voiceguard_processor.py ./audio_samples
+python __main__.py ./audio_samples
 ```
 
 ### Process multiple formats with detailed JSON output
 ```bash
-python voiceguard_processor.py ./recordings \
+python __main__.py ./recordings \
     --extensions .wav .mp3 .m4a .flac \
     --output json \
     --api-key abc123
@@ -74,7 +74,7 @@ python voiceguard_processor.py ./recordings \
 
 ### Process with both output formats
 ```bash
-python voiceguard_processor.py ./test_audio \
+python __main__.py ./test_audio \
     --output both \
     --extensions .wav .mp3
 ```
@@ -95,7 +95,7 @@ Localhost URLs (containing `localhost` or `127.0.0.1`) don't require authenticat
 Default backend URL points to the production VoiceGuard API. For development or custom deployments:
 
 ```bash
-python voiceguard_processor.py ./audio \
+python __main__.py ./audio \
     --backend-url http://localhost:8080/query
 ```
 
