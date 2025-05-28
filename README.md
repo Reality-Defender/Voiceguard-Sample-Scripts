@@ -6,16 +6,6 @@ Set up the environment using: `conda env create -f voiceguard-processor.yaml`
 
 ## Usage
 
-### Basic Usage
-
-Process all .wav files in a directory:
-
-```bash
-python voiceguard_processor.py /path/to/audio/directory
-```
-
-### Advanced Usage
-
 ```bash
 python voiceguard_processor.py /path/to/audio/directory \
     --extensions .wav .mp3 .m4a \
