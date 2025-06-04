@@ -1,0 +1,8 @@
+voiceguard_smoke_test_20240116
+*.csv
+test_files
+debug
+zoom
+isolation
+*.json
+audiofiles
