@@ -2,7 +2,10 @@
 
 A Python tool for batch processing audio files through the VoiceGuard backend system to detect AI-generated or manipulated voice content.
 
-Set up the environment using: `conda env create -f voiceguard-processor.yaml`
+Set up the environment using after installing the `conda` CLI: 
+
+1. `conda env create -f environment.yml`
+2. `conda env create -f voiceguard-processor.yaml`
 
 ## Usage
 
@@ -32,6 +35,8 @@ You can set these environment variables instead of using command line arguments:
 export API_KEY="your-api-key-here"
 export BACKEND_URL="https://your-backend-url/query"
 ```
+
+An example value for `BACKEND_URL` is `https://app.api.voiceguard.realitydefender.xyz/query`, which is what you would use if you're trying to use the multi-tenant VoiceGuard production API.
 
 ## Output Formats
 
@@ -89,6 +94,8 @@ For production environments, you must provide an API key:
 2. **Environment variable**: `export API_KEY="YOUR_KEY"`
 
 Localhost URLs (containing `localhost` or `127.0.0.1`) don't require authentication.
+
+You only need to supply either the `--api-key` flag or set the `API_KEY` environment variable. If both are set, the `--api-key` flag takes precedence.
 
 ### Backend URL
 
