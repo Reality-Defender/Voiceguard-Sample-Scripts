@@ -5,7 +5,7 @@ A Python tool for batch processing audio files through the VoiceGuard backend sy
 Set up the environment using after installing the `conda` CLI: 
 
 1. `conda env create -f environment.yml`
-2. `conda env create -f voiceguard-processor.yaml`
+2. `conda activate voiceguard-processor`
 
 ## Usage
 
