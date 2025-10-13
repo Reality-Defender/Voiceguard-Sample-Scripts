@@ -6,3 +6,4 @@ zoom
 isolation
 *.json
 audiofiles
+.DS_Store

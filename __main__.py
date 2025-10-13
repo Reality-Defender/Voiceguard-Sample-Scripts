@@ -279,7 +279,7 @@ class FileProcessor:
             logger.error(f"Unexpected error in createFiles: {str(e)}")
             return None
     
-    def get_stream_status(self, file_id: str) -> Optional[tuple[str, float, str]]:
+    def get_stream_status(self, file_id: str) -> Optional[tuple[str, float, str, str, int]]:
         """
         Query the stream status for a given file ID from the backend system.
 
@@ -287,7 +287,7 @@ class FileProcessor:
             file_id (str): The unique identifier of the file to query
 
         Returns:
-            Optional[tuple[str, float, str]]: Tuple of (conclusion, probability, reason) if processing is complete, None otherwise
+            Optional[tuple[str, float, str, str, int]]: Tuple of (conclusion, probability, reason, stream_id, millisecondsToConclusion) if processing is complete, None otherwise
         """
         query = """
         query GetStreamByOriginalFileId($fileId: SortableID!) {
@@ -376,7 +376,8 @@ class FileProcessor:
                         unique_conclusions = list(dict.fromkeys(preprocessing_conclusions))  # Remove duplicates while preserving order
                         reason = ", ".join(unique_conclusions)
                 
-                return (stream_result["conclusion"], stream_result.get("probability", -1), reason, stream_id)          
+                milliseconds_to_conclusion = stream_result.get("millisecondsToConclusion", -1)
+                return (stream_result["conclusion"], stream_result.get("probability", -1), reason, stream_id, milliseconds_to_conclusion)          
             
             return None
             
@@ -687,7 +688,7 @@ class FileProcessor:
             if csv_path:
                 file_exists = csv_path.exists()
                 with open(csv_path, 'a', newline='') as f:
-                    writer = csv.DictWriter(f, fieldnames=['original_filename', 'file_id', 'stream_id', 'status', 'conclusion', 'probability', 'reason'])
+                    writer = csv.DictWriter(f, fieldnames=['original_filename', 'file_id', 'stream_id', 'status', 'conclusion', 'probability', 'reason', 'millisecondsToConclusion'])
                     if not file_exists:
                         writer.writeheader()
                     
@@ -699,7 +700,8 @@ class FileProcessor:
                         'status': 'UPLOADING',
                         'conclusion': '',
                         'probability': -1,
-                        'reason': ''
+                        'reason': '',
+                        'millisecondsToConclusion': -1
                     })
 
             # Process file
@@ -735,12 +737,12 @@ class FileProcessor:
             while True:
                 result = self.get_stream_status(file_id)
                 if result:
-                    conclusion, probability, reason, stream_id = result
+                    conclusion, probability, reason, stream_id, milliseconds_to_conclusion = result
                     logger.debug(f"Processing complete: {conclusion} (probability: {probability})")
                     
                     # Update CSV if requested
                     if csv_path:
-                        self._update_csv_conclusion(csv_path, file_id, stream_id, conclusion, probability, reason)
+                        self._update_csv_conclusion(csv_path, file_id, stream_id, conclusion, probability, reason, milliseconds_to_conclusion)
                     
                     # Get detailed stream data and save to JSON if requested
                     if json_path:
@@ -756,7 +758,7 @@ class FileProcessor:
                 if time.time() - start_time > timeout:
                     logger.warning(f"Processing timed out after {timeout}s")
                     if csv_path:
-                        self._update_csv_conclusion(csv_path, file_id, stream_id, "INCONCLUSIVE", -1, "TIMEOUT")
+                        self._update_csv_conclusion(csv_path, file_id, stream_id, "INCONCLUSIVE", -1, "TIMEOUT", -1)
                     break
                 
                 time.sleep(2)  # Reduced polling frequency to avoid rate limiting
@@ -766,7 +768,7 @@ class FileProcessor:
             logger.error(f"Error processing file {file_path}: {str(e)}")
             if csv_path:
                 with open(csv_path, 'a', newline='') as f:
-                    writer = csv.DictWriter(f, fieldnames=['original_filename', 'file_id', 'stream_id', 'status', 'conclusion', 'probability', 'reason'])
+                    writer = csv.DictWriter(f, fieldnames=['original_filename', 'file_id', 'stream_id', 'status', 'conclusion', 'probability', 'reason', 'millisecondsToConclusion'])
                     writer.writerow({
                         'original_filename': file_path,
                         'file_id': '',
@@ -774,7 +776,8 @@ class FileProcessor:
                         'status': 'ERROR',
                         'conclusion': '',
                         'probability': -1,
-                        'reason': str(e)
+                        'reason': str(e),
+                        'millisecondsToConclusion': -1
                     })
 
     def _get_file_duration(self, file_path: str) -> Optional[float]:
@@ -794,7 +797,7 @@ class FileProcessor:
             logger.warning(f"Could not determine file duration for {file_path}: {str(e)}")
             return None
 
-    def _update_csv_conclusion(self, csv_path: Path, file_id: str, stream_id: str, conclusion: str, probability: float, reason: str) -> None:
+    def _update_csv_conclusion(self, csv_path: Path, file_id: str, stream_id: str, conclusion: str, probability: float, reason: str, milliseconds_to_conclusion: int) -> None:
         """Helper method to update a file's conclusion in the CSV."""
         updated_rows = []
         with open(csv_path, 'r', newline='') as f:
@@ -806,10 +809,11 @@ class FileProcessor:
                     row['probability'] = probability
                     row['reason'] = reason
                     row['status'] = 'COMPLETED'
+                    row['millisecondsToConclusion'] = milliseconds_to_conclusion
                 updated_rows.append(row)
         
         with open(csv_path, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=['original_filename', 'file_id', 'stream_id', 'status', 'conclusion', 'probability', 'reason'])
+            writer = csv.DictWriter(f, fieldnames=['original_filename', 'file_id', 'stream_id', 'status', 'conclusion', 'probability', 'reason', 'millisecondsToConclusion'])
             writer.writeheader()
             writer.writerows(updated_rows)
 
@@ -825,7 +829,7 @@ class FileProcessor:
                 updated_rows.append(row)
         
         with open(csv_path, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=['original_filename', 'file_id', 'stream_id', 'status', 'conclusion', 'probability', 'reason'])
+            writer = csv.DictWriter(f, fieldnames=['original_filename', 'file_id', 'stream_id', 'status', 'conclusion', 'probability', 'reason', 'millisecondsToConclusion'])
             writer.writeheader()
             writer.writerows(updated_rows)
     
