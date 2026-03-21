@@ -1,0 +1,33 @@
+[project]
+name = "Voiceguard-Sample-Scripts"
+version = "0.0.1"
+description = "Voiceguard Sample Scripts"
+readme = "README.md"
+packages = [{ include = "." }]
+requires-python = ">3.10,<=3.12"
+dependencies = [
+    "pydub>=0.25.1",
+    "requests>=2.32.5",
+    "tqdm>=4.67.3",
+]
+
+[dependency-groups]
+dev = [
+  "ruff",
+  "pytest",
+  "mypy",
+  "boto3-stubs[essential]>=1.38.46",
+  "types-psutil>=7.0.0.20251001",
+  "realitydefender",
+]
+
+#[build-system]
+#requires = ["hatchling"]
+#build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+unfixable = ["F401"]
