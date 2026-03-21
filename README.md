@@ -41,14 +41,14 @@ docker run docker run \
 
 ### Command Line Arguments
 
-| Argument        | Description                             | Default                             |
-|-----------------|-----------------------------------------|-------------------------------------|
-| `directory`     | Directory containing files to process   | Required                            |
-| `--extensions`  | Allowed file extensions                 | `.wav`                              |
-| `--api-key`     | API key for authentication              | None (reads from `API_KEY` env var) |
-| `--output`      | Output format: `csv`, `json`, or `both` | csv                                 
-| `--output-dir`  | Directory to output result files        | current directory                   |
-| `--backend-url` | Backend GraphQL endpoint                | Production VoiceGuard URL           |
+| Argument        | Description                             | Default                   |
+|-----------------|-----------------------------------------|---------------------------|
+| `directory`     | Directory containing files to process   | Required                  |
+| `--mode`        | Analysis mode (STREAMING or STATIC)     | STATIC                    |
+| `--extensions`  | Allowed file extensions                 | `.wav`                    || `--api-key`     | API key for authentication              | None (reads from `API_KEY` env var) |
+| `--output`      | Output format: `csv`, `json`, or `both` | csv                       
+| `--output-dir`  | Directory to output result files        | current directory         |
+| `--backend-url` | Backend GraphQL endpoint                | Production VoiceGuard URL |
 
 ### Environment Variables
 
