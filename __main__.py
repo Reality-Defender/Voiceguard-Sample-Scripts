@@ -28,7 +28,7 @@ class FileProcessor:
         backend_url (str): The URL endpoint for the backend GraphQL API
     """
 
-    def __init__(self, backend_url: str = "https://voiceguard.dev.api.realitydefender.xyz/query", api_key: Optional[str] = None) -> None:
+    def __init__(self, backend_url: str = "https://app.api.voiceguard.realitydefender.xyz/query", api_key: Optional[str] = None) -> None:
         """
         Initialize the FileProcessor with a backend URL and API key.
 
