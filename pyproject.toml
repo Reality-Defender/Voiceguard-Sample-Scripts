@@ -1,0 +1,25 @@
+[project]
+name = "Voiceguard-Sample-Scripts"
+version = "0.0.1"
+description = "Voiceguard Sample Scripts"
+readme = "README.md"
+requires-python = ">3.10,<=3.12"
+dependencies = [
+    "pydub>=0.25.1",
+    "requests>=2.32.5",
+    "tqdm>=4.67.3",
+]
+
+[dependency-groups]
+dev = [
+  "ruff",
+  "pytest",
+  "mypy",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+unfixable = ["F401"]

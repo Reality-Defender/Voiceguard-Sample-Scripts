@@ -1,31 +1,54 @@
 # VoiceGuard File Processor
 
-A Python tool for batch processing audio files through the VoiceGuard backend system to detect AI-generated or manipulated voice content.
+A Python tool for batch processing audio files through the VoiceGuard backend system to detect AI-generated or
+manipulated voice content.
 
-Set up the environment using after installing the `conda` CLI: 
+## To use with `uv`
+
+```bash
+uv run python __main__.py <directory> \
+    --extensions wav mp3 m4a \
+    --api-key <api_key> \
+    --output both
+```
+
+## To use with `conda`:
 
 1. `conda env create -f environment.yml`
 2. `conda activate voiceguard-processor`
 
-## Usage
+```bash
+ python __main__.py <directory> \
+    --extensions wav mp3 m4a \
+    --api-key <api_key> \
+    --output both
+```
+
+## to use with Docker
+
+1. `docker build -t voiceguard-script .`
 
 ```bash
- python __main__.py <directory>
-    --extensions wav mp3 m4a
-    --api-key <api_key>
-    --output csv json
-    --backend-url https://app.api.voiceguard.realitydefender.xyz/query
-```
+docker run docker run \
+    -v ./MYDIR/:/data \
+    voiceguard-script \
+    data/ \
+    --extensions wav mp3 m4a \
+    --api-key <api_key> \
+    --output both \
+    --output-dir /data
+````
 
 ### Command Line Arguments
 
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `directory` | Directory containing files to process | Required |
-| `--extensions` | Allowed file extensions | `.wav` |
-| `--api-key` | API key for authentication | None (reads from `API_KEY` env var) |
-| `--backend-url` | Backend GraphQL endpoint | Production VoiceGuard URL |
-| `--output` | Output format: `csv`, `json`, or `both` | `csv` |
+| Argument        | Description                             | Default                   |
+|-----------------|-----------------------------------------|---------------------------|
+| `directory`     | Directory containing files to process   | Required                  |
+| `--mode`        | Analysis mode (STREAMING or STATIC)     | STATIC                    |
+| `--extensions`  | Allowed file extensions                 | `.wav`                    || `--api-key`     | API key for authentication              | None (reads from `API_KEY` env var) |
+| `--output`      | Output format: `csv`, `json`, or `both` | csv                       
+| `--output-dir`  | Directory to output result files        | current directory         |
+| `--backend-url` | Backend GraphQL endpoint                | Production VoiceGuard URL |
 
 ### Environment Variables
 
@@ -36,7 +59,8 @@ export API_KEY="your-api-key-here"
 export BACKEND_URL="https://app.api.voiceguard.realitydefender.xyz/query"
 ```
 
-An example value for `BACKEND_URL` is `https://app.api.voiceguard.realitydefender.xyz/query`, which is what you would use if you're trying to use the multi-tenant VoiceGuard production API.
+An example value for `BACKEND_URL` is `https://app.api.voiceguard.realitydefender.xyz/query`, which is what you would
+use if you're trying to use the multi-tenant VoiceGuard production API.
 
 ## Output Formats
 
@@ -44,19 +68,20 @@ An example value for `BACKEND_URL` is `https://app.api.voiceguard.realitydefende
 
 Contains basic analysis results:
 
-| Column | Description |
-|--------|-------------|
-| `original_filename` | Path to the original file |
-| `file_id` | Backend system file ID |
-| `stream_id` | Backend system stream ID |
-| `status` | Processing status |
-| `conclusion` | Analysis result (HUMAN, AI, INCONCLUSIVE) |
-| `probability` | Confidence score (0.0-1.0) |
-| `reason` | Additional details for inconclusive results |
+| Column              | Description                                 |
+|---------------------|---------------------------------------------|
+| `original_filename` | Path to the original file                   |
+| `file_id`           | Backend system file ID                      |
+| `stream_id`         | Backend system stream ID                    |
+| `status`            | Processing status                           |
+| `conclusion`        | Analysis result (HUMAN, AI, INCONCLUSIVE)   |
+| `probability`       | Confidence score (0.0-1.0)                  |
+| `reason`            | Additional details for inconclusive results |
 
 ### JSON Output (`results_YYYYMMDD_HHMMSS.json`)
 
 Contains detailed analysis data including:
+
 - Complete stream metadata
 - Segment-by-segment analysis
 - Model results and preprocessing information
@@ -65,11 +90,13 @@ Contains detailed analysis data including:
 ## Examples
 
 ### Process WAV files with CSV output
+
 ```bash
 python __main__.py ./audio_samples
 ```
 
 ### Process multiple formats with detailed JSON output
+
 ```bash
 python __main__.py ./recordings \
     --extensions .wav .mp3 .m4a .flac \
@@ -78,6 +105,7 @@ python __main__.py ./recordings \
 ```
 
 ### Process with both output formats
+
 ```bash
 python __main__.py ./test_audio \
     --output both \

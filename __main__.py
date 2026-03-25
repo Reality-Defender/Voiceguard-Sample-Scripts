@@ -3,7 +3,7 @@ import os
 import hashlib
 import mimetypes
 import requests
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Literal, Optional
 import csv
 import json
 from pathlib import Path
@@ -28,7 +28,7 @@ class FileProcessor:
         backend_url (str): The URL endpoint for the backend GraphQL API
     """
 
-    def __init__(self, backend_url: str = "https://voiceguard.dev.api.realitydefender.xyz/query", api_key: str = None) -> None:
+    def __init__(self, backend_url: str = "https://app.api.voiceguard.realitydefender.xyz/query", api_key: Optional[str] = None) -> None:
         """
         Initialize the FileProcessor with a backend URL and API key.
 
@@ -91,7 +91,7 @@ class FileProcessor:
             "sha256": self.calculate_sha256(file_path)
         }
     
-    def create_file_blob(self, file_info: Dict[str, Any]) -> Dict[str, str]:
+    def create_file_blob(self, file_info: Dict[str, Any]) -> Optional[Dict[str, str]]:
         """
         Create a file blob entry in the backend system via GraphQL mutation.
 
@@ -197,12 +197,13 @@ class FileProcessor:
             response = requests.put(upload_url, data=f, headers=headers)
         response.raise_for_status()
         
-    def create_files(self, file_blob_id: str) -> Dict[str, List[Dict[str, str]]]:
+    def create_files(self, file_blob_id: str, processing_mode: Literal["STATIC", "STREAMING"]) -> Optional[Dict[str, List[Dict[str, str]]]]:
         """
         Create file entries in the backend system from uploaded blobs.
 
         Args:
             file_blob_id (str): ID of the previously created file blob
+            processing_mode: which processing mode to use for file
 
         Returns:
             Dict[str, List[Dict[str, str]]]: Response containing:
@@ -221,7 +222,8 @@ class FileProcessor:
         variables = {
             "input": {
                 "fileBlobIds": [file_blob_id],
-                "processingRequestType": "WITHOUT_CORRUPTION"
+                "processingRequestType": "WITHOUT_CORRUPTION",
+                "processingMode": processing_mode
             }
         }
         
@@ -665,7 +667,7 @@ class FileProcessor:
             stream_data = data.get("getStreamByOriginalFileId")
             
             if stream_data:
-                logger.debug(f"Successfully retrieved simplified stream data")
+                logger.debug("Successfully retrieved simplified stream data")
                 
             return stream_data
             
@@ -673,7 +675,7 @@ class FileProcessor:
             logger.error(f"Error in simplified query: {str(e)}")
             return None
 
-    def process_file(self, file_path: str, csv_path: Optional[Path], json_path: Optional[Path]) -> None:
+    def process_file(self, file_path: str, csv_path: Optional[Path], json_path: Optional[Path], processing_mode: Literal["STATIC", "STREAMING"]) -> None:
         """
         Process a single file through the backend system and record results in CSV and/or JSON.
         Waits for processing completion before returning.
@@ -682,6 +684,7 @@ class FileProcessor:
             file_path (str): Path to the file to process
             csv_path (Optional[Path]): Path to the CSV file for results, or None if CSV output is disabled
             json_path (Optional[Path]): Path to the JSON file for detailed results, or None if JSON output is disabled
+            processing_mode: which processing mode to use for file(s)
         """
         try:
             # Initialize CSV if requested and doesn't exist
@@ -712,9 +715,9 @@ class FileProcessor:
             logger.debug(f"Created file blob with ID: {blob_data['id']}")
             
             self.upload_file(file_path, blob_data["url"], file_info)
-            logger.debug(f"Uploaded file to blob storage")
+            logger.debug("Uploaded file to blob storage")
             
-            files_data = self.create_files(blob_data["id"])
+            files_data = self.create_files(blob_data["id"], processing_mode=processing_mode)
             
             # Check if files_data is None or doesn't have the expected structure
             if not files_data or 'files' not in files_data or not files_data['files']:
@@ -734,6 +737,7 @@ class FileProcessor:
             
             logger.debug(f"Waiting for processing to complete (timeout: {timeout}s)...")
             
+            stream_id = None
             while True:
                 result = self.get_stream_status(file_id)
                 if result:
@@ -746,13 +750,13 @@ class FileProcessor:
                     
                     # Get detailed stream data and save to JSON if requested
                     if json_path:
-                        logger.debug(f"Fetching detailed stream data...")
+                        logger.debug("Fetching detailed stream data...")
                         detailed_stream = self.get_detailed_stream(file_id)
                         if detailed_stream:
                             self._update_json_results(json_path, file_path, file_id, detailed_stream)
-                            logger.debug(f"Saved detailed stream data to JSON")
+                            logger.debug("Saved detailed stream data to JSON")
                         else:
-                            logger.warning(f"Could not fetch detailed stream data")
+                            logger.warning("Could not fetch detailed stream data")
                     break
                 
                 if time.time() - start_time > timeout:
@@ -797,7 +801,7 @@ class FileProcessor:
             logger.warning(f"Could not determine file duration for {file_path}: {str(e)}")
             return None
 
-    def _update_csv_conclusion(self, csv_path: Path, file_id: str, stream_id: str, conclusion: str, probability: float, reason: str, milliseconds_to_conclusion: int) -> None:
+    def _update_csv_conclusion(self, csv_path: Path, file_id: str, stream_id: Optional[str], conclusion: str, probability: float, reason: str, milliseconds_to_conclusion: int) -> None:
         """Helper method to update a file's conclusion in the CSV."""
         updated_rows = []
         with open(csv_path, 'r', newline='') as f:
@@ -817,7 +821,8 @@ class FileProcessor:
             writer.writeheader()
             writer.writerows(updated_rows)
 
-    def _update_csv_status(self, csv_path: Path, original_filename: str, file_id: str, status: str) -> None:
+    @classmethod
+    def _update_csv_status(cls, csv_path: Path, original_filename: str, file_id: str, status: str) -> None:
         """Helper method to update a file's status in the CSV."""
         updated_rows = []
         with open(csv_path, 'r', newline='') as f:
@@ -833,7 +838,8 @@ class FileProcessor:
             writer.writeheader()
             writer.writerows(updated_rows)
     
-    def _update_json_results(self, json_path: Path, original_filename: str, file_id: str, stream_data: Dict[str, Any]) -> None:
+    @classmethod
+    def _update_json_results(cls, json_path: Path, original_filename: str, file_id: str, stream_data: Dict[str, Any]) -> None:
         """
         Helper method to update the JSON file with detailed stream data.
         
@@ -912,11 +918,22 @@ def main() -> None:
         help="Backend URL (can also be set via BACKEND_URL environment variable)"
     )
     parser.add_argument(
+        "--mode",
+        "-m",
+        choices=("STATIC", "STREAMING"),
+        default="STATIC",
+        help="Which processing mode to use",
+    )
+    parser.add_argument(
         "--output",
-        nargs="+",
         default=["csv"],
         choices=["csv", "json", "both"],
         help="Output format(s): 'csv', 'json', or 'both' (or 'csv json'). Default: csv"
+    )
+    parser.add_argument(
+        "--output-path",
+        default=os.path.curdir,
+        help="Output path (defaults to current directory)"
     )
     args = parser.parse_args()
     
@@ -944,8 +961,8 @@ def main() -> None:
     use_json = "json" in args.output or "both" in args.output
     
     # Create output file paths if needed
-    results_csv_path = Path(f"results_{timestamp}.csv") if use_csv else None
-    results_json_path = Path(f"results_{timestamp}.json") if use_json else None
+    results_csv_path = Path(args.output_path) / Path(f"results_{timestamp}.csv") if use_csv else None
+    results_json_path = Path(args.output_path) / Path(f"results_{timestamp}.json") if use_json else None
     
     # Display which outputs will be generated
     outputs = []
@@ -976,7 +993,7 @@ def main() -> None:
     # Use tqdm directly to console (will show at INFO level)
     with tqdm(total=len(files_to_process), desc="Processing files", unit="file") as pbar:
         for file_path in files_to_process:
-            processor.process_file(file_path, results_csv_path, results_json_path)
+            processor.process_file(file_path, results_csv_path, results_json_path, args.mode)
             pbar.update(1)
     
     # Print completion message - display at INFO level

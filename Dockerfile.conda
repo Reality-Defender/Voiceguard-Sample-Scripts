@@ -1,0 +1,11 @@
+FROM continuumio/miniconda3
+
+WORKDIR /app
+
+COPY __main__.py environment.yml /app/
+
+RUN conda env create -f environment.yml
+
+ENV PATH=/opt/conda/envs/voiceguard-processor/bin:$PATH
+
+ENTRYPOINT ["python", "__main__.py"]
